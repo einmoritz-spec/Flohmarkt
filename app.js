@@ -110,7 +110,6 @@
 
   // ---------------- render dispatch ----------------
   function render() {
-    btnBack.hidden = route === "sell" || route === "history" || route === "stats" || route === "settings" ? true : false;
     btnBack.hidden = route !== "checkout";
     document.querySelectorAll(".icon-btn[data-view]").forEach((b) => {
       b.classList.toggle("active", b.dataset.view === route);

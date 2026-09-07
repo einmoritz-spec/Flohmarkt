@@ -13,12 +13,12 @@ function defaultState() {
           { qty: 3, price: 21 }
         ],
         motifs: [
-          { id: "d1", name: "Kreis", stock: 6, image: "icons/motive/kreis.jpg" },
-          { id: "d2", name: "Kreis Punkte", stock: 6, image: "icons/motive/kreis-punkte.jpg" },
-          { id: "d3", name: "Kreis Halb", stock: 6, image: "icons/motive/kreis-halb.jpg" },
-          { id: "d4", name: "Kaffeekanne", stock: 6, image: "icons/motive/kaffeekanne.jpg" },
-          { id: "d5", name: "Regenbogen", stock: 6, image: "icons/motive/regenbogen-druck.jpg" },
-          { id: "d6", name: "Ginkgo", stock: 6, image: "icons/motive/ginkgo-druck.jpg" }
+          { id: "d1", name: "Kreis", stock: 3, image: "icons/motive/kreis.jpg" },
+          { id: "d2", name: "Kreis Punkte", stock: 3, image: "icons/motive/kreis-punkte.jpg" },
+          { id: "d3", name: "Kreis Halb", stock: 3, image: "icons/motive/kreis-halb.jpg" },
+          { id: "d4", name: "Kaffeekanne", stock: 3, image: "icons/motive/kaffeekanne.jpg" },
+          { id: "d5", name: "Regenbogen", stock: 3, image: "icons/motive/regenbogen-druck.jpg" },
+          { id: "d6", name: "Ginkgo", stock: 3, image: "icons/motive/ginkgo-druck.jpg" }
         ]
       },
       {
@@ -31,9 +31,9 @@ function defaultState() {
           { qty: 3, price: 15 }
         ],
         motifs: [
-          { id: "k1", name: "Ginkgo", stock: 10, image: "icons/motive/ginkgo.jpg" },
-          { id: "k2", name: "Regenbogen", stock: 10, image: "icons/motive/regenbogen.jpg" },
-          { id: "k3", name: "Capybara", stock: 10, image: "icons/motive/capybara.jpg" }
+          { id: "k1", name: "Ginkgo", stock: 3, image: "icons/motive/ginkgo.jpg" },
+          { id: "k2", name: "Regenbogen", stock: 3, image: "icons/motive/regenbogen.jpg" },
+          { id: "k3", name: "Capybara", stock: 3, image: "icons/motive/capybara.jpg" }
         ]
       },
       {
@@ -46,7 +46,7 @@ function defaultState() {
           { qty: 3, price: 10 }
         ],
         motifs: [
-          { id: "l1", name: "Fußspuren", stock: 15, image: "icons/motive/fussspuren.jpg" }
+          { id: "l1", name: "Fußspuren", stock: 12, image: "icons/motive/fussspuren.jpg" }
         ]
       }
     ],
