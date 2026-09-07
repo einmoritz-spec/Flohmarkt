@@ -102,7 +102,7 @@ main#app {
 .motif-tile {
   position: relative;
   background: var(--card);
-  border: 1.5px solid var(--line-strong);
+  border: 2px solid var(--line-strong);
   border-radius: var(--radius);
   overflow: hidden;
   text-align: left;
@@ -111,7 +111,7 @@ main#app {
   transition: border-color .12s ease, transform .08s ease;
 }
 .motif-tile:active { transform: scale(0.97); }
-.motif-tile.selected { border-color: var(--brass); border-width: 2px; }
+.motif-tile.selected { border-color: var(--brass); }
 .motif-tile.empty { opacity: 0.38; }
 .motif-tile.empty .motif-img::after { content: "ausverkauft"; }
 
