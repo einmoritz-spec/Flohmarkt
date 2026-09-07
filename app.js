@@ -146,24 +146,26 @@
           <span class="stock-total">${totalStock} übrig</span>
         </div>
         <div class="motif-grid cols-${cat.columns}">`;
+      const isRow = cat.columns === 1;
       for (const m of cat.motifs) {
         const inCart = (state.cart[cat.id] && state.cart[cat.id][m.id]) || 0;
         const soldOut = m.stock <= 0;
         const imgHtml = m.image
           ? `<img src="${escapeHTML(m.image)}" alt="" loading="lazy">`
           : motifIcon();
-        html += `<div class="motif-tile ${inCart > 0 ? "selected" : ""} ${soldOut ? "empty" : ""}"
+        const stepper = inCart > 0 ? `<div class="motif-stepper">
+            <button type="button" class="step-btn" data-step="${cat.id}:${m.id}:-1" aria-label="Eins weniger">−</button>
+            <span class="step-count">${inCart}</span>
+            <button type="button" class="step-btn" data-step="${cat.id}:${m.id}:1" aria-label="Eins mehr" ${inCart >= m.stock ? "disabled" : ""}>+</button>
+          </div>` : "";
+        html += `<div class="motif-tile ${isRow ? "tile-row" : ""} ${inCart > 0 ? "selected" : ""} ${soldOut ? "empty" : ""}"
             data-cat="${cat.id}" data-motif="${m.id}" role="button" tabindex="0">
-          <div class="motif-img ${m.image ? "has-photo" : ""}">${imgHtml}</div>
+          <div class="motif-img ${m.image ? "has-photo" : ""}">${imgHtml}${!isRow ? stepper : ""}</div>
           <div class="motif-meta">
             <div class="name">${escapeHTML(m.name)}</div>
             <div class="stock">${m.stock}×</div>
           </div>
-          ${inCart > 0 ? `<div class="motif-stepper">
-            <button type="button" class="step-btn" data-step="${cat.id}:${m.id}:-1" aria-label="Eins weniger">−</button>
-            <span class="step-count">${inCart}</span>
-            <button type="button" class="step-btn" data-step="${cat.id}:${m.id}:1" aria-label="Eins mehr" ${inCart >= m.stock ? "disabled" : ""}>+</button>
-          </div>` : ""}
+          ${isRow ? stepper : ""}
         </div>`;
       }
       html += `</div></section>`;
@@ -410,11 +412,12 @@
 
     const remainingStock = state.categories.reduce((a, c) => a + c.motifs.reduce((x, m) => x + m.stock, 0), 0);
 
+    const adjSign = totalDiscount > 0.001 ? "-" : totalDiscount < -0.001 ? "+" : "";
     let html = `<div class="stat-grid">
       <div class="stat-card"><div class="label">Umsatz gesamt</div><div class="value">${fmtEUR(totalRevenue)}</div></div>
       <div class="stat-card"><div class="label">Verkäufe</div><div class="value">${saleCount}</div></div>
       <div class="stat-card"><div class="label">Noch da</div><div class="value">${remainingStock}</div></div>
-      <div class="stat-card"><div class="label">Preisanpassung</div><div class="value">${totalDiscount >= 0 ? "-" : "+"}${fmtEUR(Math.abs(totalDiscount))}</div></div>
+      <div class="stat-card"><div class="label">Preisanpassung</div><div class="value">${adjSign}${fmtEUR(Math.abs(totalDiscount))}</div></div>
     </div>`;
 
     html += statBars("Umsatz je Kategorie", revenueByCat, (v) => fmtEUR(v));
