@@ -152,15 +152,19 @@
         const imgHtml = m.image
           ? `<img src="${escapeHTML(m.image)}" alt="" loading="lazy">`
           : motifIcon();
-        html += `<button type="button" class="motif-tile ${inCart > 0 ? "selected" : ""} ${soldOut ? "empty" : ""}"
-            data-cat="${cat.id}" data-motif="${m.id}" ${soldOut ? "disabled" : ""}>
+        html += `<div class="motif-tile ${inCart > 0 ? "selected" : ""} ${soldOut ? "empty" : ""}"
+            data-cat="${cat.id}" data-motif="${m.id}" role="button" tabindex="0">
           <div class="motif-img ${m.image ? "has-photo" : ""}">${imgHtml}</div>
-          ${inCart > 0 ? `<span class="motif-badge">${inCart}</span><button type="button" class="motif-minus" data-decrement="${cat.id}:${m.id}" aria-label="Eins entfernen">−</button>` : ""}
           <div class="motif-meta">
             <div class="name">${escapeHTML(m.name)}</div>
-            <div class="stock">${m.stock} da</div>
+            <div class="stock">${m.stock}×</div>
           </div>
-        </button>`;
+          ${inCart > 0 ? `<div class="motif-stepper">
+            <button type="button" class="step-btn" data-step="${cat.id}:${m.id}:-1" aria-label="Eins weniger">−</button>
+            <span class="step-count">${inCart}</span>
+            <button type="button" class="step-btn" data-step="${cat.id}:${m.id}:1" aria-label="Eins mehr" ${inCart >= m.stock ? "disabled" : ""}>+</button>
+          </div>` : ""}
+        </div>`;
       }
       html += `</div></section>`;
     }
@@ -168,32 +172,19 @@
 
     app.querySelectorAll(".motif-tile").forEach((tile) => {
       const catId = tile.dataset.cat, motifId = tile.dataset.motif;
-      let pressed = false;
-      let timer = null;
-      tile.addEventListener("touchstart", () => {
-        pressed = false;
-        timer = setTimeout(() => {
-          pressed = true;
-          addToCart(catId, motifId, -1);
-          if (navigator.vibrate) navigator.vibrate(12);
-        }, 480);
-      }, { passive: true });
-      tile.addEventListener("touchend", (e) => {
-        clearTimeout(timer);
-        if (pressed) e.preventDefault(); // swallow the click that would otherwise follow
-      });
-      tile.addEventListener("touchcancel", () => clearTimeout(timer));
-      tile.addEventListener("click", () => {
-        if (pressed) { pressed = false; return; }
+      tile.addEventListener("click", (e) => {
+        if (e.target.closest(".motif-stepper")) return; // handled separately below
         addToCart(catId, motifId, 1);
       });
-      tile.addEventListener("contextmenu", (e) => { e.preventDefault(); addToCart(catId, motifId, -1); });
+      tile.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); addToCart(catId, motifId, 1); }
+      });
     });
-    app.querySelectorAll(".motif-minus").forEach((btn) => {
+    app.querySelectorAll(".step-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        const [catId, motifId] = btn.dataset.decrement.split(":");
-        addToCart(catId, motifId, -1);
+        const [catId, motifId, delta] = btn.dataset.step.split(":");
+        addToCart(catId, motifId, parseInt(delta, 10));
       });
     });
   }
