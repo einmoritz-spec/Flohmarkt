@@ -50,6 +50,10 @@ function defaultState() {
         ]
       }
     ],
+    // Appearance. mode: "system" | "light" | "dark". The four color fields
+    // override the matching CSS variable when set; null means "use the
+    // built-in default for the current mode".
+    theme: { mode: "system", paper: null, card: null, ink: null, brass: null },
     // Payment methods offered as quick-tap buttons. "Sonstiges" always
     // stays as a free-text fallback in addition to these.
     paymentMethods: ["Bar", "PayPal"],

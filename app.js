@@ -88,7 +88,23 @@
     return n;
   }
 
-  // ---------------- routing ----------------
+  // ---------------- theme ----------------
+  const THEME_VARS = { paper: "--paper", card: "--card", ink: "--ink", brass: "--brass" };
+  function applyTheme() {
+    const mode = state.theme.mode;
+    const dark = mode === "dark" || (mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+    for (const key in THEME_VARS) {
+      const val = state.theme[key];
+      if (val) document.documentElement.style.setProperty(THEME_VARS[key], val);
+      else document.documentElement.style.removeProperty(THEME_VARS[key]);
+    }
+  }
+  if (window.matchMedia) {
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+      if (state.theme.mode === "system") applyTheme();
+    });
+  }
   function go(next) {
     route = next;
     priceOverride = null;
@@ -99,10 +115,7 @@
   document.querySelectorAll("[data-view]").forEach((btn) => {
     btn.addEventListener("click", () => go(btn.dataset.view));
   });
-  btnBack.addEventListener("click", () => {
-    if (route === "checkout") go("sell");
-    else go("sell");
-  });
+  btnBack.addEventListener("click", () => go("sell"));
   document.getElementById("btn-checkout").addEventListener("click", () => {
     if (cartItemCount() === 0) return;
     go("checkout");
@@ -110,7 +123,7 @@
 
   // ---------------- render dispatch ----------------
   function render() {
-    btnBack.hidden = route !== "checkout";
+    btnBack.hidden = route === "sell";
     document.querySelectorAll(".icon-btn[data-view]").forEach((b) => {
       b.classList.toggle("active", b.dataset.view === route);
     });
@@ -461,7 +474,30 @@
 
   // ---------------- SETTINGS view ----------------
   function renderSettings() {
-    let html = "";
+    const mode = state.theme.mode;
+    const cs = getComputedStyle(document.documentElement);
+    const colorRow = (label, key) => {
+      const current = (cs.getPropertyValue(THEME_VARS[key]).trim() || "#000000");
+      return `<div class="color-row">
+        <span>${label}</span>
+        <input type="color" data-color="${key}" value="${current}">
+      </div>`;
+    };
+    let html = `<section class="settings-section">
+      <h3>Darstellung</h3>
+      <div class="theme-mode-row">
+        <button type="button" class="theme-mode-btn ${mode === "system" ? "active" : ""}" data-mode="system">System</button>
+        <button type="button" class="theme-mode-btn ${mode === "light" ? "active" : ""}" data-mode="light">Hell</button>
+        <button type="button" class="theme-mode-btn ${mode === "dark" ? "active" : ""}" data-mode="dark">Dunkel</button>
+      </div>
+      ${colorRow("Hintergrund", "paper")}
+      ${colorRow("Flächen / Karten", "card")}
+      ${colorRow("Text", "ink")}
+      ${colorRow("Akzentfarbe", "brass")}
+      <div class="settings-actions">
+        <button type="button" class="btn-secondary" id="btn-reset-theme">Farben zurücksetzen</button>
+      </div>
+    </section>`;
     for (const cat of state.categories) {
       html += `<section class="settings-section">
         <h3>${escapeHTML(cat.name)}</h3>
@@ -563,6 +599,23 @@
       save(); renderSettings();
     });
 
+    app.querySelectorAll(".theme-mode-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        state.theme.mode = btn.dataset.mode;
+        applyTheme(); save(); renderSettings();
+      });
+    });
+    app.querySelectorAll("input[data-color]").forEach((inp) => {
+      inp.addEventListener("input", (e) => {
+        state.theme[e.target.dataset.color] = e.target.value;
+        applyTheme(); save();
+      });
+    });
+    document.getElementById("btn-reset-theme").addEventListener("click", () => {
+      state.theme.paper = null; state.theme.card = null; state.theme.ink = null; state.theme.brass = null;
+      applyTheme(); save(); renderSettings(); toast("Farben zurückgesetzt");
+    });
+
     document.getElementById("btn-export").addEventListener("click", exportBackup);
     document.getElementById("import-file").addEventListener("change", importBackup);
     document.getElementById("btn-reset-sales").addEventListener("click", () => {
@@ -571,7 +624,7 @@
     });
     document.getElementById("btn-reset-all").addEventListener("click", () => {
       if (!confirm("Wirklich ALLES zurücksetzen? Das kann nicht rückgängig gemacht werden.")) return;
-      state = defaultState(); save(); renderSettings(); toast("Alles zurückgesetzt");
+      state = defaultState(); applyTheme(); save(); renderSettings(); toast("Alles zurückgesetzt");
     });
   }
 
@@ -593,6 +646,8 @@
         const parsed = JSON.parse(reader.result);
         if (!parsed.categories) throw new Error("invalid");
         state = parsed;
+        if (!state.theme) state.theme = { mode: "system", paper: null, card: null, ink: null, brass: null };
+        applyTheme();
         save();
         renderSettings();
         toast("Backup geladen");
@@ -609,6 +664,8 @@
 
   // ---------------- init ----------------
   if (!state.paymentMethods) state.paymentMethods = ["Bar", "PayPal"];
+  if (!state.theme) state.theme = { mode: "system", paper: null, card: null, ink: null, brass: null };
+  applyTheme();
   render();
 
   if ("serviceWorker" in navigator) {
