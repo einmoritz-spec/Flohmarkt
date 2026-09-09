@@ -105,17 +105,29 @@
       if (state.theme.mode === "system") applyTheme();
     });
   }
-  function go(next) {
+  function applyRoute(next) {
     route = next;
     priceOverride = null;
     selectedPayment = null;
     render();
   }
+  function go(next, opts) {
+    if (next === route && !(opts && opts.replace)) return;
+    applyRoute(next);
+    if (opts && opts.replace) history.replaceState({ route: next }, "", location.href);
+    else history.pushState({ route: next }, "", location.href);
+  }
+  window.addEventListener("popstate", (e) => {
+    applyRoute((e.state && e.state.route) || "sell");
+  });
 
   document.querySelectorAll("[data-view]").forEach((btn) => {
     btn.addEventListener("click", () => go(btn.dataset.view));
   });
-  btnBack.addEventListener("click", () => go("sell"));
+  btnBack.addEventListener("click", () => {
+    if (history.state && history.state.route) history.back();
+    else go("sell");
+  });
   document.getElementById("btn-checkout").addEventListener("click", () => {
     if (cartItemCount() === 0) return;
     go("checkout");
@@ -331,7 +343,7 @@
     state.cart = {};
     save();
     toast("Verkauf gespeichert");
-    go("sell");
+    go("sell", { replace: true });
   }
 
   // ---------------- HISTORY view ----------------
@@ -666,6 +678,7 @@
   if (!state.paymentMethods) state.paymentMethods = ["Bar", "PayPal"];
   if (!state.theme) state.theme = { mode: "system", paper: null, card: null, ink: null, brass: null };
   applyTheme();
+  history.replaceState({ route: "sell" }, "", location.href);
   render();
 
   if ("serviceWorker" in navigator) {
