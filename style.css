@@ -120,8 +120,26 @@ main#app {
 }
 .motif-tile:active { transform: scale(0.97); }
 .motif-tile.selected { border-color: var(--brass); }
-.motif-tile.empty { opacity: 0.38; }
-.motif-tile.empty .motif-img::after { content: "ausverkauft"; }
+.motif-tile.empty { opacity: 1; }
+.motif-tile.empty .motif-meta { opacity: 0.5; }
+.motif-tile.empty .motif-img img { filter: grayscale(1); opacity: 0.45; }
+.motif-tile.empty .motif-img::after {
+  content: "ausverkauft";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(-6deg);
+  padding: 4px 10px;
+  border: 1.5px solid var(--danger);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--danger);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
 
 .motif-img {
   position: relative;
@@ -225,8 +243,8 @@ main#app {
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
   background: var(--card);
   border-top: 1px solid var(--line);
-  box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
 }
+.cartbar[hidden] { display: none; }
 .cartbar-info { display: flex; flex-direction: column; font-size: 13px; color: var(--ink-soft); }
 .cartbar-price { font-size: 17px; font-weight: 600; color: var(--ink); }
 

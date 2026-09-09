@@ -121,6 +121,9 @@
     applyRoute((e.state && e.state.route) || "sell");
   });
 
+  const btnCheckout = document.getElementById("btn-checkout");
+  let checkoutFinishHandler = null;
+
   document.querySelectorAll("[data-view]").forEach((btn) => {
     btn.addEventListener("click", () => go(btn.dataset.view));
   });
@@ -128,9 +131,13 @@
     if (history.state && history.state.route) history.back();
     else go("sell");
   });
-  document.getElementById("btn-checkout").addEventListener("click", () => {
-    if (cartItemCount() === 0) return;
-    go("checkout");
+  btnCheckout.addEventListener("click", () => {
+    if (route === "sell") {
+      if (cartItemCount() === 0) return;
+      go("checkout");
+    } else if (route === "checkout" && checkoutFinishHandler) {
+      checkoutFinishHandler();
+    }
   });
 
   // ---------------- render dispatch ----------------
@@ -141,7 +148,7 @@
     });
     const titles = { sell: "Verkaufen", checkout: "Kauf abschließen", history: "Historie", stats: "Auswertung", settings: "Einstellungen" };
     viewTitle.textContent = titles[route] || "Standkasse";
-    cartbar.hidden = route !== "sell" || cartItemCount() === 0;
+    cartbar.hidden = (route !== "sell" && route !== "checkout") || cartItemCount() === 0;
 
     if (route === "sell") renderSell();
     else if (route === "checkout") renderCheckout();
@@ -151,7 +158,8 @@
 
     if (!cartbar.hidden) {
       document.getElementById("cart-count").textContent = cartItemCount() + " Artikel";
-      document.getElementById("cart-price").textContent = fmtEUR(cartTotal());
+      document.getElementById("cart-price").textContent = fmtEUR(route === "checkout" ? priceOverride : cartTotal());
+      btnCheckout.textContent = route === "checkout" ? "Kauf abschließen" : "Weiter";
     }
   }
 
@@ -274,7 +282,7 @@
     }
     html += `</div>`;
 
-    html += `<button type="button" class="finish-btn" id="btn-finish">Kauf abgeschlossen</button>`;
+    html += `</div>`;
 
     app.innerHTML = html;
 
@@ -288,15 +296,16 @@
       priceOverride = isNaN(v) || v < 0 ? 0 : v;
       if (v < 0) e.target.value = 0;
       renderCheckoutSoft(originalTotal);
+      document.getElementById("cart-price").textContent = fmtEUR(priceOverride);
     });
 
     document.querySelectorAll(".pay-btn").forEach((b) => {
       b.addEventListener("click", () => { selectedPayment = b.dataset.method; render(); });
     });
 
-    document.getElementById("btn-finish").addEventListener("click", () => {
+    checkoutFinishHandler = () => {
       finishSale(breakdown, originalTotal);
-    });
+    };
   }
 
   // lightweight re-render of just the total row's strikethrough while typing,
