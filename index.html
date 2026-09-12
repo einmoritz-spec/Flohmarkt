@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Standkasse</title>
+<title>Flohmarkt</title>
 <meta name="theme-color" content="#f4efe4">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
@@ -33,6 +33,16 @@
 </footer>
 
 <div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="confirm-overlay" hidden>
+  <div class="modal-box">
+    <p id="confirm-message"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" id="confirm-cancel">Abbrechen</button>
+      <button type="button" class="btn-primary modal-confirm" id="confirm-ok">Fortfahren</button>
+    </div>
+  </div>
+</div>
 
 <script src="data.js"></script>
 <script src="app.js"></script>

@@ -1,4 +1,4 @@
-const CACHE = "standkasse-v1";
+const CACHE = "flohmarkt-v2";
 const ASSETS = [
   "./",
   "./index.html",
@@ -12,6 +12,7 @@ const ASSETS = [
   "./icons/motive/regenbogen.jpg",
   "./icons/motive/capybara.jpg",
   "./icons/motive/fussspuren.jpg",
+  "./icons/motive/naturmotive.jpg",
   "./icons/motive/kreis.jpg",
   "./icons/motive/kreis-punkte.jpg",
   "./icons/motive/kreis-halb.jpg",

@@ -1,6 +1,6 @@
 {
-  "name": "Standkasse",
-  "short_name": "Standkasse",
+  "name": "Flohmarkt",
+  "short_name": "Flohmarkt",
   "description": "Verkaufstracking für den Flohmarktstand",
   "start_url": "./index.html",
   "scope": "./",

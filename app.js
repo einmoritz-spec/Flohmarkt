@@ -35,6 +35,33 @@
     toast._t = setTimeout(() => toastEl.classList.remove("show"), 1800);
   }
 
+  // Custom confirm dialog. Some installed/standalone PWAs silently no-op
+  // window.confirm() (it returns false without ever showing anything), so
+  // every destructive action goes through this instead.
+  const confirmOverlay = document.getElementById("confirm-overlay");
+  const confirmMessageEl = document.getElementById("confirm-message");
+  const confirmOkBtn = document.getElementById("confirm-ok");
+  const confirmCancelBtn = document.getElementById("confirm-cancel");
+  function confirmDialog(message) {
+    return new Promise((resolve) => {
+      confirmMessageEl.textContent = message;
+      confirmOverlay.hidden = false;
+      const cleanup = (result) => {
+        confirmOverlay.hidden = true;
+        confirmOkBtn.removeEventListener("click", onOk);
+        confirmCancelBtn.removeEventListener("click", onCancel);
+        confirmOverlay.removeEventListener("click", onOverlay);
+        resolve(result);
+      };
+      const onOk = () => cleanup(true);
+      const onCancel = () => cleanup(false);
+      const onOverlay = (e) => { if (e.target === confirmOverlay) cleanup(false); };
+      confirmOkBtn.addEventListener("click", onOk);
+      confirmCancelBtn.addEventListener("click", onCancel);
+      confirmOverlay.addEventListener("click", onOverlay);
+    });
+  }
+
   // ---------------- price engine ----------------
   // Finds the cheapest way to buy `qty` items of one category given its
   // quantity tiers, repeating tiers as needed (e.g. 4 = 3er + 1er).
@@ -91,19 +118,12 @@
   // ---------------- theme ----------------
   const THEME_VARS = { paper: "--paper", card: "--card", ink: "--ink", brass: "--brass" };
   function applyTheme() {
-    const mode = state.theme.mode;
-    const dark = mode === "dark" || (mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
-    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", "light");
     for (const key in THEME_VARS) {
       const val = state.theme[key];
       if (val) document.documentElement.style.setProperty(THEME_VARS[key], val);
       else document.documentElement.style.removeProperty(THEME_VARS[key]);
     }
-  }
-  if (window.matchMedia) {
-    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
-      if (state.theme.mode === "system") applyTheme();
-    });
   }
   function applyRoute(next) {
     route = next;
@@ -127,10 +147,7 @@
   document.querySelectorAll("[data-view]").forEach((btn) => {
     btn.addEventListener("click", () => go(btn.dataset.view));
   });
-  btnBack.addEventListener("click", () => {
-    if (history.state && history.state.route) history.back();
-    else go("sell");
-  });
+  btnBack.addEventListener("click", () => go("sell"));
   btnCheckout.addEventListener("click", () => {
     if (route === "sell") {
       if (cartItemCount() === 0) return;
@@ -147,7 +164,7 @@
       b.classList.toggle("active", b.dataset.view === route);
     });
     const titles = { sell: "Verkaufen", checkout: "Kauf abschließen", history: "Historie", stats: "Auswertung", settings: "Einstellungen" };
-    viewTitle.textContent = titles[route] || "Standkasse";
+    viewTitle.textContent = titles[route] || "Flohmarkt";
     cartbar.hidden = (route !== "sell" && route !== "checkout") || cartItemCount() === 0;
 
     if (route === "sell") renderSell();
@@ -387,8 +404,8 @@
     });
   }
 
-  function deleteSale(id) {
-    if (!confirm("Diesen Verkauf löschen? Der Bestand wird wieder aufgefüllt.")) return;
+  async function deleteSale(id) {
+    if (!(await confirmDialog("Diesen Verkauf löschen? Der Bestand wird wieder aufgefüllt."))) return;
     const idx = state.history.findIndex((s) => s.id === id);
     if (idx === -1) return;
     const sale = state.history[idx];
@@ -414,6 +431,7 @@
     const saleCount = sales.length;
 
     const revenueByCat = {};
+    const qtyByCat = {};
     const qtyByMotifOverall = {};
     const qtyByMotifInCat = {};
     const tierCountByCat = {};
@@ -426,6 +444,7 @@
       const catNames = [];
       for (const c of s.categories) {
         revenueByCat[c.catName] = (revenueByCat[c.catName] || 0) + c.price * ratio;
+        qtyByCat[c.catName] = (qtyByCat[c.catName] || 0) + c.qty;
         catNames.push(c.catName);
         tierCountByCat[c.catName] = tierCountByCat[c.catName] || {};
         for (const [q, cnt] of Object.entries(c.picks)) {
@@ -454,6 +473,7 @@
     </div>`;
 
     html += statBars("Umsatz je Kategorie", revenueByCat, (v) => fmtEUR(v));
+    html += statBars("Meistverkaufte Kategorie", qtyByCat, (v) => v + "×");
     html += statBars("Meistverkaufte Motive", topN(qtyByMotifOverall, 6), (v) => v + "×");
     html += statBars("Meistverkauft je Kategorie", topN(qtyByMotifInCat, 6), (v) => v + "×");
 
@@ -462,7 +482,7 @@
       const tiers = tierCountByCat[cat.name] || {};
       const parts = Object.entries(tiers).filter(([q]) => q !== "1").sort((a, b) => b[0] - a[0]);
       if (parts.length === 0) continue;
-      html += `<div class="bar-row"><span class="bar-label">${escapeHTML(cat.name)}</span><span style="color:var(--ink-soft)">${parts.map(([q, c]) => `${c}× ${q}er`).join(", ")}</span></div>`;
+      html += `<div class="bar-row"><div class="bar-row-top"><span class="bar-label">${escapeHTML(cat.name)}</span><span class="bar-value" style="color:var(--ink-soft); font-weight:400;">${parts.map(([q, c]) => `${c}× ${q}er`).join(", ")}</span></div></div>`;
     }
     html += `</section>`;
 
@@ -484,9 +504,11 @@
     for (const [label, value] of entries) {
       const pct = Math.max(4, (value / max) * 100);
       html += `<div class="bar-row">
-        <span class="bar-label">${escapeHTML(label)}</span>
-        <span class="bar-track"><span class="bar-fill" style="width:${pct}%"></span></span>
-        <span class="bar-value">${fmt(value)}</span>
+        <div class="bar-row-top">
+          <span class="bar-label">${escapeHTML(label)}</span>
+          <span class="bar-value">${fmt(value)}</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
       </div>`;
     }
     html += `</section>`;
@@ -494,8 +516,8 @@
   }
 
   // ---------------- SETTINGS view ----------------
+  let openSettingsSections = new Set();
   function renderSettings() {
-    const mode = state.theme.mode;
     const cs = getComputedStyle(document.documentElement);
     const colorRow = (label, key) => {
       const current = (cs.getPropertyValue(THEME_VARS[key]).trim() || "#000000");
@@ -504,13 +526,19 @@
         <input type="color" data-color="${key}" value="${current}">
       </div>`;
     };
-    let html = `<section class="settings-section">
-      <h3>Darstellung</h3>
-      <div class="theme-mode-row">
-        <button type="button" class="theme-mode-btn ${mode === "system" ? "active" : ""}" data-mode="system">System</button>
-        <button type="button" class="theme-mode-btn ${mode === "light" ? "active" : ""}" data-mode="light">Hell</button>
-        <button type="button" class="theme-mode-btn ${mode === "dark" ? "active" : ""}" data-mode="dark">Dunkel</button>
-      </div>
+    const acc = (key, title, subtitle, bodyHtml) => `
+      <details class="settings-accordion" name="settings-acc" data-key="${key}" ${openSettingsSections.has(key) ? "open" : ""}>
+        <summary>
+          <span class="acc-title">${title}</span>
+          <span class="acc-right">
+            ${subtitle ? `<span class="acc-subtitle">${subtitle}</span>` : ""}
+            <svg class="acc-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </summary>
+        <div class="acc-body">${bodyHtml}</div>
+      </details>`;
+
+    let html = acc("darstellung", "Darstellung", "Farben", `
       ${colorRow("Hintergrund", "paper")}
       ${colorRow("Flächen / Karten", "card")}
       ${colorRow("Text", "ink")}
@@ -518,38 +546,36 @@
       <div class="settings-actions">
         <button type="button" class="btn-secondary" id="btn-reset-theme">Farben zurücksetzen</button>
       </div>
-    </section>`;
+    `);
+
     for (const cat of state.categories) {
-      html += `<section class="settings-section">
-        <h3>${escapeHTML(cat.name)}</h3>
+      let body = `
         <div class="tier-row"><span>1×</span><input type="number" step="0.5" data-tier="${cat.id}:0" value="${cat.tiers[0].price}"> €</div>
         <div class="tier-row"><span>2×</span><input type="number" step="0.5" data-tier="${cat.id}:1" value="${cat.tiers[1].price}"> €</div>
         <div class="tier-row"><span>3×</span><input type="number" step="0.5" data-tier="${cat.id}:2" value="${cat.tiers[2].price}"> €</div>`;
       for (const m of cat.motifs) {
-        html += `<div class="motif-row">
+        body += `<div class="motif-row">
           ${m.image ? `<img src="${escapeHTML(m.image)}" alt="" class="motif-thumb">` : ""}
           <input type="text" data-name="${cat.id}:${m.id}" value="${escapeHTML(m.name)}">
           <input type="number" min="0" data-stock="${cat.id}:${m.id}" value="${m.stock}">
           <button type="button" class="remove-btn" data-remove="${cat.id}:${m.id}">×</button>
         </div>`;
       }
-      html += `<button type="button" class="add-motif-btn" data-add="${cat.id}">+ Motiv hinzufügen</button>
-      </section>`;
+      body += `<button type="button" class="add-motif-btn" data-add="${cat.id}">+ Motiv hinzufügen</button>`;
+      html += acc(cat.id, escapeHTML(cat.name), `${cat.motifs.length} Motive`, body);
     }
 
-    html += `<section class="settings-section">
-      <h3>Zahlungsarten</h3>`;
+    let payBody = "";
     for (const p of state.paymentMethods) {
-      html += `<div class="motif-row"><input type="text" value="${escapeHTML(p)}" disabled><button type="button" class="remove-btn" data-removepay="${escapeHTML(p)}">×</button></div>`;
+      payBody += `<div class="motif-row"><input type="text" value="${escapeHTML(p)}" disabled><button type="button" class="remove-btn" data-removepay="${escapeHTML(p)}">×</button></div>`;
     }
-    html += `<div class="motif-row">
+    payBody += `<div class="motif-row">
         <input type="text" id="new-pay-input" placeholder="Neue Zahlungsart, z. B. Twint">
         <button type="button" class="btn-secondary" id="btn-add-pay">Hinzufügen</button>
-      </div>
-    </section>`;
+      </div>`;
+    html += acc("zahlungsarten", "Zahlungsarten", `${state.paymentMethods.length}`, payBody);
 
-    html += `<section class="settings-section">
-      <h3>Daten</h3>
+    html += acc("daten", "Daten", "", `
       <div class="settings-actions">
         <button type="button" class="btn-secondary" id="btn-export">Backup exportieren (JSON)</button>
         <label class="btn-secondary" style="text-align:center; display:block;">Backup importieren
@@ -558,9 +584,16 @@
         <button type="button" class="btn-secondary" id="btn-reset-sales">Verkäufe & Warenkorb zurücksetzen</button>
         <button type="button" class="btn-secondary btn-danger" id="btn-reset-all">Alles zurücksetzen</button>
       </div>
-    </section>`;
+    `);
 
     app.innerHTML = html;
+
+    app.querySelectorAll("details.settings-accordion").forEach((d) => {
+      d.addEventListener("toggle", () => {
+        if (d.open) openSettingsSections.add(d.dataset.key);
+        else openSettingsSections.delete(d.dataset.key);
+      });
+    });
 
     app.querySelectorAll("input[data-tier]").forEach((inp) => {
       inp.addEventListener("change", (e) => {
@@ -589,10 +622,10 @@
       });
     });
     app.querySelectorAll("[data-remove]").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
+      btn.addEventListener("click", async (e) => {
         const [catId, motifId] = e.target.dataset.remove.split(":");
         const cat = state.categories.find((c) => c.id === catId);
-        if (!confirm("Motiv wirklich entfernen?")) return;
+        if (!(await confirmDialog("Motiv wirklich entfernen?"))) return;
         cat.motifs = cat.motifs.filter((m) => m.id !== motifId);
         save(); renderSettings();
       });
@@ -620,12 +653,6 @@
       save(); renderSettings();
     });
 
-    app.querySelectorAll(".theme-mode-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        state.theme.mode = btn.dataset.mode;
-        applyTheme(); save(); renderSettings();
-      });
-    });
     app.querySelectorAll("input[data-color]").forEach((inp) => {
       inp.addEventListener("input", (e) => {
         state.theme[e.target.dataset.color] = e.target.value;
@@ -639,12 +666,22 @@
 
     document.getElementById("btn-export").addEventListener("click", exportBackup);
     document.getElementById("import-file").addEventListener("change", importBackup);
-    document.getElementById("btn-reset-sales").addEventListener("click", () => {
-      if (!confirm("Alle Verkäufe und der Warenkorb werden gelöscht. Bestände bleiben wie sie sind. Fortfahren?")) return;
+    document.getElementById("btn-reset-sales").addEventListener("click", async () => {
+      if (!(await confirmDialog("Alle Verkäufe werden gelöscht, der Bestand wird für jeden gelöschten Verkauf wieder aufgefüllt. Fortfahren?"))) return;
+      for (const sale of state.history) {
+        for (const c of sale.categories) {
+          const cat = state.categories.find((x) => x.id === c.catId);
+          if (!cat) continue;
+          for (const i of c.items) {
+            const m = cat.motifs.find((x) => x.id === i.motifId);
+            if (m) m.stock += i.qty;
+          }
+        }
+      }
       state.history = []; state.cart = {}; save(); renderSettings(); toast("Zurückgesetzt");
     });
-    document.getElementById("btn-reset-all").addEventListener("click", () => {
-      if (!confirm("Wirklich ALLES zurücksetzen? Das kann nicht rückgängig gemacht werden.")) return;
+    document.getElementById("btn-reset-all").addEventListener("click", async () => {
+      if (!(await confirmDialog("Wirklich ALLES zurücksetzen? Das kann nicht rückgängig gemacht werden."))) return;
       state = defaultState(); applyTheme(); save(); renderSettings(); toast("Alles zurückgesetzt");
     });
   }
@@ -667,7 +704,7 @@
         const parsed = JSON.parse(reader.result);
         if (!parsed.categories) throw new Error("invalid");
         state = parsed;
-        if (!state.theme) state.theme = { mode: "system", paper: null, card: null, ink: null, brass: null };
+        if (!state.theme) state.theme = { paper: null, card: null, ink: null, brass: null };
         applyTheme();
         save();
         renderSettings();
@@ -685,7 +722,7 @@
 
   // ---------------- init ----------------
   if (!state.paymentMethods) state.paymentMethods = ["Bar", "PayPal"];
-  if (!state.theme) state.theme = { mode: "system", paper: null, card: null, ink: null, brass: null };
+  if (!state.theme) state.theme = { paper: null, card: null, ink: null, brass: null };
   applyTheme();
   history.replaceState({ route: "sell" }, "", location.href);
   render();

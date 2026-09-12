@@ -31,9 +31,9 @@ function defaultState() {
           { qty: 3, price: 15 }
         ],
         motifs: [
-          { id: "k1", name: "Ginkgo", stock: 3, image: "icons/motive/ginkgo.jpg" },
-          { id: "k2", name: "Regenbogen", stock: 3, image: "icons/motive/regenbogen.jpg" },
-          { id: "k3", name: "Capybara", stock: 3, image: "icons/motive/capybara.jpg" }
+          { id: "k1", name: "Ginkgo", stock: 5, image: "icons/motive/ginkgo.jpg" },
+          { id: "k2", name: "Regenbogen", stock: 5, image: "icons/motive/regenbogen.jpg" },
+          { id: "k3", name: "Capybara", stock: 5, image: "icons/motive/capybara.jpg" }
         ]
       },
       {
@@ -46,14 +46,14 @@ function defaultState() {
           { qty: 3, price: 10 }
         ],
         motifs: [
-          { id: "l1", name: "Fußspuren", stock: 12, image: "icons/motive/fussspuren.jpg" }
+          { id: "l1", name: "Fußspuren", stock: 13, image: "icons/motive/fussspuren.jpg" },
+          { id: "l2", name: "Naturmotive", stock: 5, image: "icons/motive/naturmotive.jpg" }
         ]
       }
     ],
-    // Appearance. mode: "system" | "light" | "dark". The four color fields
-    // override the matching CSS variable when set; null means "use the
-    // built-in default for the current mode".
-    theme: { mode: "system", paper: null, card: null, ink: null, brass: null },
+    // Appearance. The four color fields override the matching CSS variable
+    // when set; null means "use the built-in default".
+    theme: { paper: null, card: null, ink: null, brass: null },
     // Payment methods offered as quick-tap buttons. "Sonstiges" always
     // stays as a free-text fallback in addition to these.
     paymentMethods: ["Bar", "PayPal"],

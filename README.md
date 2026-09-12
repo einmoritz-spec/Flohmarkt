@@ -1,4 +1,4 @@
-# Standkasse
+# Flohmarkt
 
 Kleine Web-App fürs Tracking von Verkäufen am Flohmarktstand: Bestand, Preise mit Mengenrabatt,
 Verkaufshistorie und Auswertung. Läuft komplett offline im Browser, keine Anmeldung, keine
