@@ -191,7 +191,7 @@
       const totalStock = cat.motifs.reduce((a, m) => a + m.stock, 0);
       html += `<section class="category-block">
         <div class="category-head">
-          <h2>${escapeHTML(cat.name)}</h2>
+          <h2>${escapeHTML(cat.name)}${cat.size ? `<span class="category-size">${escapeHTML(cat.size)}</span>` : ""}</h2>
           <span class="stock-total">${totalStock} übrig</span>
         </div>
         <div class="motif-grid cols-${cat.columns}">`;

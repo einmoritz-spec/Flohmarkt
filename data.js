@@ -6,6 +6,7 @@ function defaultState() {
       {
         id: "drucke",
         name: "Drucke",
+        size: "10 × 15 cm",
         columns: 3,
         tiers: [
           { qty: 1, price: 8 },
@@ -24,6 +25,7 @@ function defaultState() {
       {
         id: "karten",
         name: "Karten",
+        size: "7 × 9 cm",
         columns: 3,
         tiers: [
           { qty: 1, price: 6 },
